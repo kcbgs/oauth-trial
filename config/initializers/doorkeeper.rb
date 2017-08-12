@@ -4,20 +4,14 @@ Doorkeeper.configure do
 
   # This block will be called to check whether the resource owner is authenticated or not.
   resource_owner_authenticator do
-    current_user || warden.authenticate!(:scope => :user)
-  end
-  resource_owner_from_credentials do |routes|
-    request.params[:user] = {:email => request.params[:username], :password => request.params[:password]}
-    request.env["devise.allow_params_authentication"] = true
-    request.env["warden"].authenticate!(:scope => :user)
+    session[:return_to] = request.fullpath
+    current_user || redirect_to(new_user_session_url)
   end
 
   # If you want to restrict access to the web interface for adding oauth authorized applications, you need to declare the block below.
-  # admin_authenticator do
-  #   # Put your admin authentication logic here.
-  #   # Example implementation:
-  #   Admin.find_by_id(session[:admin_id]) || redirect_to(new_admin_session_url)
-  # end
+  admin_authenticator do
+    current_user.try(:admin) || redirect_to(new_user_session_url)
+  end
 
   # Authorization Code expiration time (default 10 minutes).
   # authorization_code_expires_in 10.minutes
@@ -25,6 +19,7 @@ Doorkeeper.configure do
   # Access token expiration time (default 2 hours).
   # If you want to disable expiration, set this to nil.
   # access_token_expires_in 2.hours
+  access_token_expires_in 1.months
 
   # Assign a custom TTL for implicit grants.
   # custom_access_token_expires_in do |oauth_client|
